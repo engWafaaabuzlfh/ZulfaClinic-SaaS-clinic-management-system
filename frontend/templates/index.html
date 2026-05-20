@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ClinicFlow</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body data-page="{{ page }}" data-patient-id="{{ patient_id | default('', true) }}">
+    <header class="topbar">
+      <div>
+        <h1>زلفة للعيادات</h1>
+        <p>إدارة بسيطة وواضحة للمرضى والمواعيد والزيارات والكشف المالي.</p>
+      </div>
+      <nav class="nav">
+        {% if doctor %}
+          <span class="doctor-chip"><span class="doctor-icon">د</span>{{ doctor.name }}</span>
+          <a href="/patients">المرضى</a>
+          <a class="primary-link" href="/patients/new">مريض جديد</a>
+          <div class="settings-menu">
+            <button id="settingsBtn" type="button" class="icon-button" title="الإعدادات" aria-label="الإعدادات">⚙</button>
+            <div id="settingsPanel" class="settings-panel">
+              <button id="logoutBtn" type="button" class="menu-button">تسجيل الخروج</button>
+            </div>
+          </div>
+        {% else %}
+          <a href="/login">تسجيل الدخول</a>
+          <a class="primary-link" href="/register">إنشاء حساب طبيب</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <main class="page">
+      <section id="loginPage" class="screen auth-screen">
+        <div class="section-title">
+          <div>
+            <h2>تسجيل الدخول</h2>
+            <p>ادخل كطبيب لعرض مرضاك فقط.</p>
+          </div>
+        </div>
+        <form id="loginForm" class="auth-form">
+          <input name="phone" placeholder="رقم الهاتف" required>
+          <input name="password" type="password" placeholder="كلمة المرور" required>
+          <button type="submit">دخول</button>
+          <a class="secondary-link" href="/register">إنشاء حساب طبيب</a>
+        </form>
+      </section>
+
+      <section id="registerPage" class="screen auth-screen">
+        <div class="section-title">
+          <div>
+            <h2>إنشاء حساب طبيب</h2>
+            <p>هذا الحساب هو المستخدم، ولن يرى إلا المرضى التابعين له.</p>
+          </div>
+        </div>
+        <form id="registerForm" class="auth-form">
+          <input name="name" placeholder="اسم الطبيب" required>
+          <input name="phone" placeholder="رقم الهاتف" required>
+          <input name="specialty" placeholder="التخصص">
+          <input name="password" type="password" placeholder="كلمة المرور" required>
+          <textarea name="notes" placeholder="ملاحظات"></textarea>
+          <button type="submit">إنشاء الحساب</button>
+          <a class="secondary-link" href="/login">لدي حساب بالفعل</a>
+        </form>
+      </section>
+
+      <section id="patientsPage" class="screen">
+        <div class="section-title">
+          <div>
+            <h2>المرضى</h2>
+            <p>جدول مختصر بمرضى الطبيب الحالي فقط.</p>
+          </div>
+          <input id="patientsSearch" type="search" placeholder="بحث بالاسم أو رقم الهاتف">
+        </div>
+
+        <div class="table-toolbar">
+          <a class="primary-link" href="/patients/new">إضافة مريض</a>
+          <button id="deletePatientBtn" type="button" class="danger-button" disabled>حذف المحدد</button>
+          <span id="selectedPatientText" class="meta">لم يتم تحديد مريض</span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="select-cell"></th>
+                <th>اسم المريض</th>
+                <th>رقم الهاتف</th>
+                <th>كشف مالي</th>
+                <th>آخر زيارة</th>
+                <th>موعد قادم</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="patientsTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="newPatientPage" class="screen">
+        <div class="section-title">
+          <div>
+            <h2>إنشاء مريض</h2>
+            <p>سيتم ربط المريض تلقائيًا بحساب الطبيب الحالي.</p>
+          </div>
+        </div>
+
+        <form id="createPatientForm" class="wide-form">
+          <fieldset>
+            <legend>بيانات المريض</legend>
+            <div class="form-grid two">
+              <input name="name" placeholder="اسم المريض" required>
+              <input name="phone" placeholder="رقم الهاتف" required>
+              <input name="age" type="number" min="0" placeholder="العمر">
+              <textarea name="notes" placeholder="ملاحظات"></textarea>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>موعد اختياري</legend>
+            <div class="form-grid three">
+              <input name="appointment_date" type="date">
+              <input name="appointment_time" type="time">
+              <input name="reason" placeholder="سبب الموعد">
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>زيارة وكشف مالي اختياري</legend>
+            <div class="form-grid two">
+              <input name="visit_date" type="date">
+              <textarea name="diagnosis" placeholder="ملاحظات الزيارة"></textarea>
+              <input name="cost" type="number" min="0" step="0.01" placeholder="تكلفة المعاينة">
+              <input name="paid" type="number" min="0" step="0.01" placeholder="المدفوع">
+            </div>
+          </fieldset>
+
+          <div class="form-actions">
+            <button type="submit">حفظ المريض</button>
+            <a class="secondary-link" href="/patients">رجوع للقائمة</a>
+          </div>
+        </form>
+      </section>
+
+      <section id="patientPage" class="screen patient-screen">
+        <div class="section-title">
+          <div>
+            <h2 id="patientName">ملف المريض</h2>
+            <p id="patientMeta">...</p>
+          </div>
+          <a class="secondary-link" href="/patients">رجوع للقائمة</a>
+        </div>
+
+        <div class="summary-grid">
+          <div>
+            <span>تكلفة المعاينات</span>
+            <strong id="patientTotalCost">0</strong>
+          </div>
+          <div>
+            <span>المدفوع</span>
+            <strong id="patientTotalPaid">0</strong>
+          </div>
+          <div>
+            <span>المتبقي</span>
+            <strong id="patientTotalRemaining">0</strong>
+          </div>
+        </div>
+
+        <div class="content-grid">
+          <section class="panel">
+            <h3>الملاحظات</h3>
+            <p id="patientNotes" class="notes-box">لا توجد ملاحظات.</p>
+          </section>
+
+          <section class="panel">
+            <h3>إضافة موعد</h3>
+            <form id="patientAppointmentForm" class="mini-form">
+              <input name="appointment_date" type="date" required>
+              <input name="appointment_time" type="time" required>
+              <input name="reason" placeholder="سبب الموعد">
+              <button type="submit">حفظ الموعد</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <h3>إضافة زيارة وكشف مالي</h3>
+            <form id="patientVisitForm" class="mini-form">
+              <input name="visit_date" type="date" required>
+              <textarea name="diagnosis" placeholder="ملاحظات الزيارة"></textarea>
+              <input name="cost" type="number" min="0" step="0.01" placeholder="تكلفة المعاينة">
+              <input name="paid" type="number" min="0" step="0.01" placeholder="المدفوع">
+              <button type="submit">حفظ الزيارة</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <h3>المواعيد</h3>
+            <div id="patientAppointments" class="list compact"></div>
+          </section>
+
+          <section class="panel wide">
+            <h3>الزيارات والكشف المالي</h3>
+            <div id="patientVisits" class="list compact"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast"></div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
