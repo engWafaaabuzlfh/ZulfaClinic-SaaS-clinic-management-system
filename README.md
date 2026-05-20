@@ -47,9 +47,48 @@ src/
 |   |-- main.py
 |   `-- clinicflow/
 |       |-- __init__.py
-|       |-- database.py
+|       |-- database.py              # compatibility re-export
 |       |-- main.py
-|       `-- models.py
+|       |-- models.py                # compatibility re-export
+|       |-- core/
+|       |   |-- __init__.py
+|       |   |-- database.py
+|       |   |-- dependencies.py
+|       |   |-- migrations.py
+|       |   |-- models.py
+|       |   |-- security.py
+|       |   `-- utils.py
+|       `-- modules/
+|           |-- auth/
+|           |   |-- crud.py
+|           |   |-- routers.py
+|           |   `-- schemas.py
+|           |-- patients_create/
+|           |   |-- crud.py
+|           |   |-- routers.py
+|           |   `-- schemas.py
+|           |-- patients_get/
+|           |   |-- crud.py
+|           |   |-- routers.py
+|           |   `-- schemas.py
+|           |-- appointments/
+|           |   |-- crud.py
+|           |   |-- routers.py
+|           |   `-- schemas.py
+|           |-- queue/
+|           |   |-- crud.py
+|           |   |-- routers.py
+|           |   `-- schemas.py
+|           |-- visits/
+|           |   |-- crud.py
+|           |   |-- routers.py
+|           |   `-- schemas.py
+|           |-- finance/
+|           |   |-- crud.py
+|           |   |-- routers.py
+|           |   `-- schemas.py
+|           `-- pages/
+|               `-- routers.py
 `-- frontend/
     |-- static/
     |   |-- app.js
@@ -66,25 +105,55 @@ src/
   - ASGI entrypoint that exposes the FastAPI app.
 
 - `src/backend/clinicflow/main.py`
-  - Main FastAPI application.
-  - Defines HTML page routes.
-  - Defines API endpoints.
-  - Handles authentication, sessions, password hashing, authorization, and ownership checks.
-  - Mounts frontend static files and templates.
+  - Main FastAPI application factory-style wiring.
+  - Mounts static frontend assets.
+  - Registers all feature routers.
+  - Runs startup schema checks.
+
+- `src/backend/clinicflow/core/`
+  - Shared backend foundation.
+  - `database.py`: SQLAlchemy engine, session, and `Base`.
+  - `models.py`: SQLAlchemy database models and enums.
+  - `security.py`: password hashing and signed session helpers.
+  - `dependencies.py`: FastAPI dependencies for authenticated doctor and ownership checks.
+  - `migrations.py`: lightweight startup schema compatibility checks.
+  - `utils.py`: shared parsing helpers.
+
+- `src/backend/clinicflow/modules/`
+  - Feature modules. Each API area is separated into:
+    - `routers.py`: FastAPI endpoints.
+    - `crud.py`: database operations and business rules.
+    - `schemas.py`: response shaping/serialization helpers.
+
+- `src/backend/clinicflow/modules/auth/`
+  - Doctor registration, login, logout, current doctor endpoint.
+
+- `src/backend/clinicflow/modules/patients_create/`
+  - Patient creation endpoint and related creation logic.
+
+- `src/backend/clinicflow/modules/patients_get/`
+  - Patient listing, details, deletion, ownership-safe retrieval.
+
+- `src/backend/clinicflow/modules/appointments/`
+  - Appointment listing, creation, and updates.
+
+- `src/backend/clinicflow/modules/queue/`
+  - Daily queue listing, adding patients to queue, status updates.
+
+- `src/backend/clinicflow/modules/visits/`
+  - Visit creation and visit financial entry creation.
+
+- `src/backend/clinicflow/modules/finance/`
+  - Financial summary endpoint.
+
+- `src/backend/clinicflow/modules/pages/`
+  - HTML page routes for login, registration, patients list, patient form, and patient profile.
 
 - `src/backend/clinicflow/database.py`
-  - Loads environment variables.
-  - Configures the PostgreSQL database engine.
-  - Provides SQLAlchemy session dependency.
+  - Compatibility re-export for `core.database`.
 
 - `src/backend/clinicflow/models.py`
-  - SQLAlchemy models:
-    - `Doctor`
-    - `Patient`
-    - `Appointment`
-    - `Visit`
-    - `QueueEntry`
-  - Defines appointment and queue status enums.
+  - Compatibility re-export for `core.models`.
 
 ### Frontend
 
@@ -220,7 +289,11 @@ Only the doctor who owns the patient can open this page.
 
 All endpoints under `/api/*`, except doctor registration and login, require an authenticated doctor session.
 
-### Authentication
+The API layer is organized by module. Each module owns its `routers.py`, `crud.py`, and `schemas.py` files so endpoints do not live in one large backend file.
+
+### Authentication Module
+
+Folder: `src/backend/clinicflow/modules/auth/`
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -229,17 +302,28 @@ All endpoints under `/api/*`, except doctor registration and login, require an a
 | `POST` | `/api/auth/logout` | Clear the current session cookie. |
 | `GET` | `/api/doctors` | Return the currently authenticated doctor. |
 
-### Patients
+### Patient Creation Module
+
+Folder: `src/backend/clinicflow/modules/patients_create/`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/patients` | Create a patient owned by the current doctor. |
+
+### Patient Retrieval Module
+
+Folder: `src/backend/clinicflow/modules/patients_get/`
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/patients` | List patients owned by the current doctor. Supports `q` search query. |
-| `POST` | `/api/patients` | Create a patient owned by the current doctor. |
 | `GET` | `/api/patients/{patient_id}` | Get one owned patient with visits, appointments, and financial totals. |
 | `DELETE` | `/api/patients/{patient_id}` | Delete one owned patient and related child records. |
 | `PUT` | `/api/patients/{patient_id}/doctor` | Re-assert ownership for the current doctor. Kept for internal compatibility. |
 
-### Appointments
+### Appointments Module
+
+Folder: `src/backend/clinicflow/modules/appointments/`
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -247,7 +331,9 @@ All endpoints under `/api/*`, except doctor registration and login, require an a
 | `POST` | `/api/appointments` | Create an appointment for an owned patient. |
 | `PUT` | `/api/appointments/{appointment_id}` | Update an appointment owned by the current doctor. |
 
-### Queue
+### Queue Module
+
+Folder: `src/backend/clinicflow/modules/queue/`
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -255,11 +341,20 @@ All endpoints under `/api/*`, except doctor registration and login, require an a
 | `POST` | `/api/queue` | Add an owned patient to the queue. |
 | `PUT` | `/api/queue/{entry_id}` | Update queue status: `waiting`, `entered`, or `done`. |
 
-### Visits and Finance
+### Visits Module
+
+Folder: `src/backend/clinicflow/modules/visits/`
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/api/visits` | Create a visit and financial record for an owned patient. |
+
+### Finance Module
+
+Folder: `src/backend/clinicflow/modules/finance/`
+
+| Method | Endpoint | Description |
+|---|---|---|
 | `GET` | `/api/finance` | Return financial rows and totals for the current doctor. Supports optional `day=YYYY-MM-DD`. |
 
 ## Data Ownership
