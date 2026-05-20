@@ -20,10 +20,11 @@ from .models import Appointment, AppointmentStatus, Doctor, Patient, QueueEntry,
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
+FRONTEND_DIR = BASE_DIR / "frontend"
 
-app = FastAPI(title="ClinicFlow")
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+app = FastAPI(title="Zulfa Clinic")
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")
+templates = Jinja2Templates(directory=FRONTEND_DIR / "templates")
 SESSION_SECRET = os.getenv("SESSION_SECRET", "clinicflow-dev-secret-change-me")
 SESSION_COOKIE = "clinicflow_session"
 
